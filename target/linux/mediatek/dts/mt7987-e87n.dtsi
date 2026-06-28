@@ -13,6 +13,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/reset/mediatek,mt7987-resets.h>
+#include <dt-bindings/regulator/richtek,rt5190a-regulator.h>
 
 /* TOPRGU resets */
 #define MT7987_TOPRGU_SGMII0_GRST		1
@@ -44,6 +45,7 @@
 		optee {
 			method = "smc";
 			compatible = "linaro,optee-tz";
+			status = "okay";
 		};
 	};
 
@@ -110,17 +112,17 @@
 			compatible = "operating-points-v2";
 			opp-shared;
 			opp00 {
-				opp-hz = /bits/ 64 <500000000>;
-				opp-microvolt = <850000>;
-			};
+            	opp-hz = /bits/ 64 <2000000000>;
+                opp-microvolt = <850000>;
+            };
 			opp01 {
-				opp-hz = /bits/ 64 <1300000000>;
-				opp-microvolt = <850000>;
-			};
+                opp-hz = /bits/ 64 <2000000000>;
+                opp-microvolt = <850000>;
+            };
 			opp02 {
-				opp-hz = /bits/ 64 <1600000000>;
-				opp-microvolt = <850000>;
-			};
+                opp-hz = /bits/ 64 <2000000000>;
+                opp-microvolt = <850000>;
+            };
 			opp03 {
 				opp-hz = /bits/ 64 <2000000000>;
 				opp-microvolt = <850000>;
@@ -185,7 +187,6 @@
 					 <&sgmiisys0 CLK_SGM0_TX_EN>,
 					 <&sgmiisys0 CLK_SGM0_RX_EN>;
 				clock-names = "sgmii_sel", "sgmii_tx", "sgmii_rx";
-				#pcs-cells = <0>;
 			};
 		};
 
@@ -205,7 +206,6 @@
 					 <&sgmiisys1 CLK_SGM1_TX_EN>,
 					 <&sgmiisys1 CLK_SGM1_RX_EN>;
 				clock-names = "sgmii_sel", "sgmii_tx", "sgmii_rx";
-				#pcs-cells = <0>;
 			};
 		};
 
@@ -237,7 +237,7 @@
 
 	fan: pwm-fan {
 		compatible = "pwm-fan";
-		cooling-levels = <0 128 192 255>;
+		cooling-levels = <0 128 255>;
 		#cooling-cells = <2>;
 		#thermal-sensor-cells = <1>;
 		status = "disabled";
@@ -408,7 +408,6 @@
 			interrupts = <GIC_SPI 225 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-parent = <&gic>;
 			#interrupt-cells = <2>;
-
 			mmc_pins_default: mmc-pins-default {
 				mux {
 					function = "flash";
@@ -540,8 +539,7 @@
 			pcie0_pins: pcie0-pins {
 				mux {
 					function = "pcie";
-					groups = "pcie0_pereset", "pcie0_clkreq",
-						 "pcie0_wake";
+					groups = "pcie0_pereset", "pcie0_clkreq";
 				};
 			};
 
@@ -617,7 +615,7 @@
 					 *   pwm2_1 : PWM2@PIN44 (share with i2c0)
 					 */
 					function = "pwm";
-					groups = "pwm0";
+					groups = "pwm0", "pwm1_0", "pwm2_0";
 				};
 			};
 
@@ -700,7 +698,7 @@
 					  <&infracfg CLK_INFRA_MUX_UART0_SEL>;
 			assigned-clock-parents = <&topckgen
 						  CLK_TOP_CB_CKSQ_40M>,
-						  <&topckgen CLK_TOP_UART_SEL>;
+						 <&topckgen CLK_TOP_UART_SEL>;
 			status = "disabled";
 		};
 
@@ -766,8 +764,6 @@
 						 <&topckgen CLK_TOP_SPI_SEL>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk",
 				      "hclk";
-			#address-cells = <1>;
-			#size-cells = <0>;
 			status = "disabled";
 		};
 
@@ -787,8 +783,6 @@
 						  CLK_TOP_SPIM_MST_SEL>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk",
 				      "hclk";
-			#address-cells = <1>;
-			#size-cells = <0>;
 			status = "disabled";
 		};
 
@@ -808,8 +802,6 @@
 						 <&topckgen CLK_TOP_SPI_SEL>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk",
 				      "hclk";
-			#address-cells = <1>;
-			#size-cells = <0>;
 			status = "disabled";
 		};
 
@@ -855,7 +847,7 @@
 				nvmem-cell-names = "intr", "rx_imp", "tx_imp",
 						   "auto_load_valid";
 				mediatek,syscon-type = <&topmisc 0x218 0>;
-				status = "disabled";
+				status = "okay";
 			};
 		};
 
@@ -878,11 +870,10 @@
 				      "dma_ck";
 			#address-cells = <2>;
 			#size-cells = <2>;
-			mediatek,u3p-dis-msk = <0x0>;
-			phys = <&tphyu2port0 PHY_TYPE_USB2>,
-			       <&tphyu3port0 PHY_TYPE_USB3>;
+			phys = <&tphyu2port0 PHY_TYPE_USB2>;
 			usb2-lpm-disable;
-			status = "disabled";
+			mediatek,u3p-dis-msk=<1>;
+			status = "okay";
 		};
 
 		afe: audio-controller@11210000 {
@@ -937,9 +928,15 @@
 			status = "disabled";
 		};
 
-		wed0: wed@15010000 {
-			compatible = "mediatek,mt7987-wed",
-				     "syscon";
+		wed: wed {
+			compatible = "mediatek,wed";
+			wed_num = <1>;
+		};
+
+		wed0: wed0@15010000 {
+			compatible = "mediatek,wed0";
+			/* add this property for wed get the pci slot number */
+			pci_slot_map = <0>;
 			reg = <0 0x15010000 0 0x2000>;
 			interrupt-parent = <&gic>;
 			interrupts = <GIC_SPI 205 IRQ_TYPE_LEVEL_HIGH>;
@@ -1022,7 +1019,6 @@
 				#interrupt-cells = <1>;
 				interrupt-controller;
 			};
-
 			slot1: pcie@0,0 {
 				reg = <0x0000 0 0 0 0>;
 			};
@@ -1090,7 +1086,6 @@
 			reg = <0 0x1a110000 0 0x1000>;
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
 		};
-
 		ethwarp: syscon@15031000 {
 			compatible = "mediatek,mt7988-ethwarp", "syscon";
 			reg = <0 0x15031000 0 0x1000>;
@@ -1101,7 +1096,11 @@
 			compatible = "mediatek,mt7987-eth";
 			reg = <0 0x15100000 0 0x80000>,
 			      <0 0x15400000 0 0x20000>;
-			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
+			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 197 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
@@ -1131,25 +1130,29 @@
 						 <&apmixedsys CLK_APMIXED_SGMPLL>,
 						 <&apmixedsys CLK_APMIXED_SGMPLL>;
 			mediatek,ethsys = <&ethsys>;
-			mediatek,wed = <&wed0>;
 			mediatek,infracfg = <&topmisc>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&mdio0_pins>;
 			#reset-cells = <1>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+			status = "disabled";
 
 			gmac0: mac@0 {
 				compatible = "mediatek,eth-mac";
 				reg = <0>;
 				pcs-handle = <&sgmiipcs0>;
-				status = "disabled";
+				phy-mode = "2500base-x";
+	            phy-handle = <&phy3>;
+	            status = "okay";
 			};
 
 			gmac1: mac@1 {
 				compatible = "mediatek,eth-mac";
 				reg = <1>;
-				status = "disabled";
+				phy-mode = "internal";
+	            phy-handle = <&phy15>;
+	            status = "okay";
 			};
 
 			gmac2: mac@2 {
@@ -1160,8 +1163,25 @@
 			};
 
 			mdio: mdio-bus {
-				#address-cells = <1>;
-				#size-cells = <0>;
+				phy3: phy@3 {
+	                compatible = "ethernet-phy-ieee802.3-c45";
+	                reg = <3>;
+	                reset-assert-us = <100000>;
+	                reset-deassert-us = <100000>;
+	                reset-gpios = <&pio 42 GPIO_ACTIVE_LOW>;
+	                interrupts = <41 IRQ_TYPE_LEVEL_LOW>;
+	                interrupt-parent = <&pio>;
+	                realtek,aldps-enable;
+					realtek,led-link-select = <0xa7 0xa7 0x0>;
+	            };
+
+				phy15: phy@15 {
+	                pinctrl-names = "i2p5gbe-led";
+	                pinctrl-0 = <&i2p5gbe_led0_pins>;
+	                compatible = "ethernet-phy-ieee802.3-c45";
+	                reg = <15>;
+	                phy-mode = "internal";
+	            };
 			};
 
 			hnat: hnat@15000000 {
@@ -1183,6 +1203,14 @@
 				     <GIC_SPI 217 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "ring0", "ring1", "ring2", "ring3";
 			eth = <&eth>;
+			status = "disabled";
+		};
+
+		netsys: soc_netsys {
+			#address-cells = <2>;
+			#size-cells = <2>;
+			compatible = "simple-bus";
+			ranges;
 		};
 	};
 };
